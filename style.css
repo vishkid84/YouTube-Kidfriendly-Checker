@@ -62,7 +62,7 @@ body{
     border-radius: 8px;
 }
 
-.channelName{
+h1, .channelName{
     font-family: 'Roboto Condensed', sans-serif;
     text-align: center;
     margin-bottom: 15px;

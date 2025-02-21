@@ -1,76 +1,50 @@
-import fetch from 'node-fetch';
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Replace these with your actual Client ID and Client Secret
-const CLIENT_ID = '915378739390-o9hfmifregvhr1s8lnpj4rdp2b6csast.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
+app.use(cors());
+app.use(express.json()); // Allow JSON requests
 
-// The same redirect URI you registered in the Google Cloud Console
-const REDIRECT_URI = 'http://127.0.0.1:5500/oauth2callback';
+// Route to fetch YouTube Channel Data
+app.get("/api/channel/:channelName", async (req, res) => {
+    const channelName = req.params.channelName;
+    const apiKey = process.env.YOUTUBE_API_KEY; // Hidden in .env
 
-// Serve static files (including index.html)
-app.use(express.static(path.join(__dirname)));
-
-app.get('/test', (req, res) => {
-    res.send('Test route works');
-});
-
-  
-// This route handles the OAuth2 callback
-app.get('/oauth2callback', async (req, res) => {
-  const code = req.query.code;
-
-  if (!code) {
-    return res.send('No code found in the query params.');
-  }
-
-  // Exchange the authorization code for an access token
-  const tokenUrl = 'https://oauth2.googleapis.com/token';
-  const params = new URLSearchParams();
-  params.append('code', code);
-  params.append('client_id', CLIENT_ID);
-  params.append('client_secret', CLIENT_SECRET);
-  params.append('redirect_uri', REDIRECT_URI);
-  params.append('grant_type', 'authorization_code');
-
-  try {
-    const tokenResponse = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params
-    });
-    const tokenData = await tokenResponse.json();
-
-    if (tokenData.access_token) {
-      // We have an access token! Let's fetch the subscriptions
-      const subscriptionsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50';
-      const subsResponse = await fetch(subscriptionsUrl, {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`
-        }
-      });
-      const subsData = await subsResponse.json();
-
-      // For now, just display the raw data
-      return res.send(`<pre>${JSON.stringify(subsData, null, 2)}</pre>`);
-    } else {
-      return res.send(`Error getting token: ${JSON.stringify(tokenData)}`);
+    try {
+        const response = await axios.get(
+            `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails,statistics&forHandle=${channelName}&key=${apiKey}`
+        );
+        res.json(response.data);
+    } catch (error) {
+        console.error("Error fetching YouTube data:", error);
+        res.status(500).json({ error: "Failed to fetch data" });
     }
-  } catch (error) {
-    console.error(error);
-    return res.send('Error exchanging code for token.');
-  }
 });
 
-// Start the server on port 5500
-console.log('Starting server...');
-app.listen(5500, () => {
-  console.log('Server running at http://127.0.0.1:5500');
+// Route to analyze content with Gemini API
+app.post("/api/analyze", async (req, res) => {
+    const { text } = req.body;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview-02-05:generateContent?key=${geminiApiKey}`,
+            {
+                contents: [{ parts: [{ text }] }]
+            }
+        );
+        res.json(response.data);
+    } catch (error) {
+        console.error("Gemini API Request Failed:", error);
+        res.status(500).json({ error: "Failed to analyze content" });
+    }
+});
+
+// Start Server
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
