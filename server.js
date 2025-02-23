@@ -29,8 +29,6 @@ app.get('/config', (req, res) => {
 
 
 
-console.log("🔑 YOUTUBE_API_KEY:", YOUTUBE_API_KEY);
-
 // Fetch YouTube Channel Details
 app.get('/channel/:handle', async (req, res) => {
   const { handle } = req.params;
