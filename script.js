@@ -1,8 +1,8 @@
 let YOUTUBE_API_KEY = "";
 
-const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
+// const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
 
-// const API_BASE_URL = "http://127.0.0.1:3000";
+const API_BASE_URL = "http://127.0.0.1:3000";
 
 // const API_BASE_URL = window.location.hostname === "localhost" 
 //     ? "http://127.0.0.1:3000" 
@@ -36,7 +36,7 @@ document.getElementById("channelForm").addEventListener("submit", async (event) 
   let channelName = null;
 
   // ----- A) Detect If Input Is a Video URL -----
-  if (input.includes("watch?v=")) {
+  if (input.includes("watch?v=") || input.includes("youtu.be/")) {
     videoId = extractVideoId(input);
     // console.log(videoId);
     await processVideo(videoId);
@@ -58,8 +58,13 @@ document.getElementById("channelForm").addEventListener("submit", async (event) 
 
 // Function to Extract Video ID from YouTube Video URL
 function extractVideoId(url) {
-  const match = url.match(/(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/shorts\/|\/watch\?v=)([a-zA-Z0-9_-]{11})/);
-  return match ? match[1] : null;
+    let match = url.match(/(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/shorts\/|\/watch\?v=)([a-zA-Z0-9_-]{11})/);
+    if (!match) {
+        // Handle cases where "?si=" exists (from mobile share links)
+        let cleanUrl = url.split("?")[0]; // Remove query parameters
+        match = cleanUrl.match(/(?:youtu\.be\/|\/watch\?v=)([a-zA-Z0-9_-]{11})/);
+    }
+    return match ? match[1] : null;
 }
 
 // ----------Function to Fetch Channel Details--------------
