@@ -1,8 +1,8 @@
 let YOUTUBE_API_KEY = "";
 
-const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
+// const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
 
-// const API_BASE_URL = "http://127.0.0.1:3000";
+const API_BASE_URL = "http://127.0.0.1:3000";
 
 // const API_BASE_URL = window.location.hostname === "localhost" 
 //     ? "http://127.0.0.1:3000" 
@@ -28,6 +28,7 @@ fetchApiKey();
 document.getElementById("channelForm").addEventListener("submit", async (event) =>{
   event.preventDefault();
 
+
   const input = document.getElementById("channelInput").value.trim();
   let channelId = null;
   let videoId = null;
@@ -38,6 +39,7 @@ document.getElementById("channelForm").addEventListener("submit", async (event) 
   if (input.includes("watch?v=")) {
     videoId = extractVideoId(input);
     // console.log(videoId);
+    await processVideo(videoId);
   } 
 
   // --------- B) If Input Is a YouTube Handle (@username) ---------
@@ -272,34 +274,127 @@ async function getLatestVideo(playlistId) {
 
 // --------------- Fetch Video Details (Title, Description, madeForKids Status)------------------
 async function fetchVideoDetails(videoId) {
-  const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,status&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,status&id=${videoId}&key=${YOUTUBE_API_KEY}`;
 
-  try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
+    try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-      if (!data.items || data.items.length === 0) {
-          console.error("❌ No video details found.");
-          return null;
-      }
+        if (!data.items || data.items.length === 0) {
+            console.error("❌ No video details found.");
+            return null;
+        }
 
-      const video = data.items[0];
-      return {
-          title: video.snippet.title,
-          description: video.snippet?.description?.trim() || "No description available.",
-          madeForKids: video.status?.madeForKids ?? "Unknown",
-      };
-  } catch (error) {
-      console.error("Error fetching video details:", error);
-      return null;
-  }
+        const video = data.items[0];
+        return {
+            title: video.snippet.title,
+            description: video.snippet?.description?.trim() || "No description available.",
+            channelId: video.snippet.channelId,  // ✅ Extracts channelId
+            madeForKids: video.status?.madeForKids ?? "Unknown"
+        };
+    } catch (error) {
+        console.error("🚨 Error fetching video details:", error);
+        return null;
+    }
 }
 
 
+// --------------------Fetch from video---------------
+
+async function processVideo(videoId) {
+    let resultElement = document.getElementById("result");
+
+    // **Fetch Video Details**
+    const videoData = await fetchVideoDetails(videoId);
+    // console.log("📩 Video Data:", videoData);
+
+    if (!videoData || !videoData.channelId) {
+        resultElement.innerHTML = "No video details found.";
+        return;
+    }
+
+    // **Fetch Channel Details Using channelId**
+    const channelData = await fetchChannelDetailsById(videoData.channelId);
+    // console.log("📡 Channel Data:", channelData);
+
+    if (!channelData) {
+        resultElement.innerHTML = `<h2>${videoData.title}</h2><p>No channel details found.</p>`;
+        return;
+    }
+
+    // **Send to AI for Analysis**
+    const aiResponse = await checkChannelKidFriendly(channelData.description, videoData.description);
+    // console.log("🤖 AI Analysis Result:", aiResponse);
+
+    if (!aiResponse) {
+        resultElement.innerHTML = `<h2>${videoData.title}</h2><p>Error retrieving AI analysis.</p>`;
+        return;
+    }
+
+    // **Render UI**
+    resultElement.innerHTML = `
+        <div class="table-container">
+          <div class="col">
+            <h2 class="channelName">Channel: ${channelData.title}</h2>
+            <table class="result-table">
+                <tr>
+                    <th>Category</th>
+                    <th>Assessment</th>
+                </tr>
+                <tr>
+                    <td>Made for Kids:</td>
+                    <td>${aiResponse.MadeForKids}</td>
+                </tr>
+                <tr>
+                    <td>Below 5:</td>
+                    <td>${aiResponse.Below5}</td>
+                </tr>
+                <tr>
+                    <td>Ages 5-7:</td>
+                    <td>${aiResponse.Ages5to7}</td>
+                </tr>
+                <tr>
+                    <td>Ages 8-10:</td>
+                    <td>${aiResponse.Ages8to10}</td>
+                </tr>
+                <tr>
+                    <td>Ages 11-16:</td>
+                    <td>${aiResponse.Ages11to16}</td>
+                </tr>
+                <tr>
+                    <td>Ages 16+:</td>
+                    <td>${aiResponse.Ages16Plus}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td>Final Summary:</td>
+                    <td>${aiResponse.Summary}</td>
+                </tr>
+            </table>
+          </div>
+        </div>
+    `;
+}
 
 
+async function fetchChannelDetailsById(channelId) {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${YOUTUBE_API_KEY}`;
 
+    try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
+        if (!data.items || data.items.length === 0) {
+            console.error("❌ No channel data found.");
+            return null;
+        }
 
-
-
+        const channel = data.items[0];
+        return {
+            title: channel.snippet.title,
+            description: channel.snippet?.description?.trim() || "No description available."
+        };
+    } catch (error) {
+        console.error("🚨 Error fetching channel details:", error);
+        return null;
+    }
+}

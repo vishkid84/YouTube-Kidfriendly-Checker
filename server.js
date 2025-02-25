@@ -80,7 +80,7 @@ app.post('/analyze', async (req, res) => {
 
               Please provide the output as a valid JSON object:
               {
-                "MadeForKids": "The creator has tagged this video as made for kids or The creator has not tagged this video as made for kids",
+                "MadeForKids": "The creator has tagged this as made for kids or The creator has not tagged this as made for kids",
                 "Below5": "Suitability & Explanation",
                 "Ages5to7": "Suitability & Explanation",
                 "Ages8to10": "Suitability & Explanation",

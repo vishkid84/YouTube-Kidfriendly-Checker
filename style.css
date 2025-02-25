@@ -3,7 +3,7 @@ body{
 }
 
 .submitBtn{
-    background-color: #ff0033;
+    background-color: #FF0000;
     border: none;
 }
 
@@ -67,3 +67,5 @@ h1, .channelName{
     text-align: center;
     margin-bottom: 15px;
 }
+
+
