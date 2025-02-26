@@ -98,7 +98,7 @@ app.post('/analyze', async (req, res) => {
 
     // List of models to try
     const models = [
-        "gemini-2.0-flash-lite-preview-02-05", // ❌ Currently failing
+        "gemini-2.0-flash-lite", // ❌ Currently failing
         "gemini-2.0-flash", // ✅ Alternative model
         "gemini-1.5-flash" // ✅ Another fallback model
     ];
@@ -107,7 +107,7 @@ app.post('/analyze', async (req, res) => {
         try {
             console.log(`🚀 Trying AI Model: ${model}`);
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(requestBody)
