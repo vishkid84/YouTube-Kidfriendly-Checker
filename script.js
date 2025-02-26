@@ -1,8 +1,8 @@
 let YOUTUBE_API_KEY = "";
 
-const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
+// const API_BASE_URL = "https://youtube-kidfriendly-checker.onrender.com";
 
-// const API_BASE_URL = "http://127.0.0.1:3000";
+const API_BASE_URL = "http://127.0.0.1:3000";
 
 // const API_BASE_URL = window.location.hostname === "localhost" 
 //     ? "http://127.0.0.1:3000" 
